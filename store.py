@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class MemoryStore:
-    def __init__(self, db_path):
-        self.conn = sqlite3.connect(str(db_path))
+    def __init__(self, db_path, check_same_thread=True):
+        self.conn = sqlite3.connect(str(db_path), check_same_thread=check_same_thread)
         self.conn.row_factory = sqlite3.Row
         self._init_db()
 

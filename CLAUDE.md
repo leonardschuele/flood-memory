@@ -6,14 +6,17 @@ flood-memory — Pure-stdlib Python MCP server for AI assistant memory. SQLite +
 ## Key files
 - `store.py` — MemoryStore class, all DB logic (schema, CRUD, FTS, graph traversal)
 - `server.py` — MCP protocol handler, tool definitions, stdio main loop
-- `test.py` — 33 tests (unittest), includes subprocess-based MCP integration tests
+- `server_remote.py` — HTTP/SSE transport (imports handlers from server.py)
+- `test.py` — 48 tests (unittest), includes subprocess MCP tests and threaded HTTP tests
 - `setup.py` — Cross-platform setup script
 - `flood-memory-mcp-spec.md` — Authoritative spec (kept updated with all design decisions)
 
 ## Commands
 - Run tests: `python -m unittest test -v`
 - Run setup: `python setup.py`
-- Run server directly: `python server.py` (reads from stdin, writes to stdout)
+- Run server (stdio): `python server.py` (reads from stdin, writes to stdout)
+- Run server (remote): `FLOOD_MEMORY_AUTH_TOKEN=<token> python server_remote.py`
+  - Env vars: `FLOOD_MEMORY_HOST` (default `0.0.0.0`), `FLOOD_MEMORY_PORT` (default `8080`)
 
 ## Architecture rules
 - No external dependencies. Pure stdlib only.

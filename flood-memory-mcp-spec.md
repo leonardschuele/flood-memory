@@ -160,6 +160,58 @@ On systems where `python3` is the correct command, setup.py should detect this a
 
 These may emerge from use. Don't pre-build them.
 
+## Remote transport (HTTP/SSE)
+
+`server_remote.py` provides an HTTP transport as an alternative to stdio, using stdlib `http.server`.
+
+### Endpoint
+- **POST /mcp** — JSON-RPC 2.0 request/response. Same method routing as stdio transport.
+- **OPTIONS /mcp** — CORS preflight. Returns 204 with CORS headers.
+
+### Authentication
+Bearer token via `FLOOD_MEMORY_AUTH_TOKEN` env var. All POST requests must include `Authorization: Bearer <token>`. OPTIONS (preflight) is exempt. Returns 401 if token is missing or wrong. If the env var is unset, auth is disabled (with a warning).
+
+### CORS
+Every response includes:
+```
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: POST, GET, OPTIONS
+Access-Control-Allow-Headers: Content-Type, Authorization, Mcp-Session-Id
+```
+
+### SSE support
+If the request includes `Accept: text/event-stream`, the JSON-RPC response is wrapped as SSE:
+```
+Content-Type: text/event-stream
+Cache-Control: no-cache
+
+data: {"jsonrpc":"2.0","id":1,"result":{...}}
+
+```
+Otherwise, plain `application/json` is returned.
+
+### Notifications
+JSON-RPC messages without an `id` field (e.g., `notifications/initialized`) receive HTTP 202 Accepted with no body.
+
+### Configuration
+| Env var | Default | Description |
+|---------|---------|-------------|
+| `FLOOD_MEMORY_AUTH_TOKEN` | (none) | Bearer token for auth |
+| `FLOOD_MEMORY_HOST` | `0.0.0.0` | Bind address |
+| `FLOOD_MEMORY_PORT` | `8080` | Listen port |
+| `FLOOD_MEMORY_DIR` | `~/flood/memory` | Data directory (shared with stdio) |
+
+### File structure update
+```
+flood-memory/
+├── server.py         -- MCP stdio transport
+├── server_remote.py  -- MCP HTTP/SSE transport
+├── store.py          -- SQLite storage + FTS + graph traversal
+├── test.py           -- Tests for store + stdio + remote
+├── setup.py          -- Setup script (prints both local and remote config)
+└── README.md         -- Usage docs
+```
+
 ## Test coverage
 - CRUD: create node, retrieve by ID, verify content/tags/links
 - Search: FTS query returns correct results, tag-only filtering works, combined query+tags works
@@ -168,3 +220,4 @@ These may emerge from use. Don't pre-build them.
 - Forget: delete node, verify back-links cleaned up in connected nodes
 - Update: partial update of content/tags/links, verify bidirectional link sync on link changes
 - MCP: initialize handshake, tools/list, tools/call for each tool (all 5)
+- Remote: auth (valid/missing/wrong token), CORS preflight, initialize, tools/list, tools/call (all 5), SSE response, notification handling
